@@ -42,9 +42,7 @@ const upload = multer({
 });
 
 const handleImageUpload = (req, res, next) => {
-  // use upload.any() for debugging + broader compatibility (accept any file field)
-  const uploader = upload.any();
-  uploader(req, res, (err) => {
+  upload.any()(req, res, (err) => {
     if (err) {
       return res.status(400).json({ success: false, message: err.message || 'File upload error' });
     }
@@ -68,7 +66,7 @@ router.get('/', (req, res) => {
             rec.image_url = rec.image_path;
           } else {
             const localPath = storage.getLocalPath(rec.image_path) || rec.image_path;
-            const rel = path.relative(storage.uploadsDir, localPath).replace(/\\\\/g, '/');
+            const rel = path.relative(storage.uploadsDir, localPath).replace(/\\/g, '/');
             rec.image_url = `/api/uploads/${rel}`;
           }
         } else {
@@ -102,7 +100,13 @@ router.get('/:id', (req, res) => {
       }
 
       if (record.image_path) {
-        record.image_url = storage.isRemoteUrl(record.image_path) ? record.image_path : `/api/uploads/${path.basename(record.image_path)}`;
+        if (storage.isRemoteUrl(record.image_path)) {
+          record.image_url = record.image_path;
+        } else {
+          const localPath = storage.getLocalPath(record.image_path) || record.image_path;
+          const rel = path.relative(storage.uploadsDir, localPath).replace(/\\/g, '/');
+          record.image_url = `/api/uploads/${rel}`;
+        }
       } else {
         record.image_url = null;
       }
@@ -139,7 +143,7 @@ router.post('/', handleImageUpload, async (req, res) => {
       const buffer = uploaded.buffer || (uploaded.path ? fs.readFileSync(uploaded.path) : null);
       if (buffer) {
         const filename = uploaded.filename || 'purchase-' + Date.now() + path.extname(uploaded.originalname || '.png');
-        const relativePath = 'backups/' + filename; // save under backups for debugging
+        const relativePath = 'purchases/' + filename;
         const saved = await storage.saveFile(buffer, relativePath);
         console.log('[purchasesRoutes] Saved image for purchase:', { originalname: uploaded.originalname, stored: saved });
         imagePath = saved.path;
@@ -210,7 +214,7 @@ router.put('/:id', handleImageUpload, async (req, res) => {
         const buffer = uploaded.buffer || (uploaded.path ? fs.readFileSync(uploaded.path) : null);
         if (buffer) {
           const filename = uploaded.filename || 'purchase-' + Date.now() + path.extname(uploaded.originalname || '.png');
-          const relativePath = 'backups/' + filename; // save under backups for debugging
+          const relativePath = 'purchases/' + filename;
           const saved = await storage.saveFile(buffer, relativePath);
           imagePath = saved.path;
           if (record.image_path) {
