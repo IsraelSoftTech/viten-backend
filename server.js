@@ -48,9 +48,11 @@ app.use((req, res, next) => {
   express.json({ limit: '50mb' })(req, res, next);
 });
 
-// Uploads: ensure directories exist and serve local files (FTP or local)
-storage.ensureLocalDir();
-app.use('/api/uploads', express.static(uploadsDir));
+// Local uploads only when not using FTP
+if (!storage.useFtp) {
+  storage.ensureLocalDir();
+  app.use('/api/uploads', express.static(uploadsDir));
+}
 
 /* ================= DATABASE INIT ================= */
 

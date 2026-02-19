@@ -60,7 +60,9 @@ async function saveFile(buffer, relativePath) {
       await client.uploadFrom(Readable.from(Buffer.from(buffer)), remotePath);
       console.log('File uploaded successfully');
       
-      const publicUrl = ftpPublicBaseUrl ? `${ftpPublicBaseUrl}/${normalized}` : remotePath;
+      // Public URL must match the actual path on the server (include ftpBaseDir e.g. /viten-shop)
+      const pathForUrl = remotePath.replace(/^\/+/, '');
+      const publicUrl = ftpPublicBaseUrl ? `${ftpPublicBaseUrl}/${pathForUrl}` : remotePath;
       console.log('Public URL:', publicUrl);
       return { path: publicUrl, publicUrl };
     } catch (ftpErr) {

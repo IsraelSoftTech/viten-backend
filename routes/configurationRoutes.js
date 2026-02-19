@@ -129,10 +129,8 @@ router.get('/', (req, res) => {
         : '{customer} received the above items in good condition.'
     };
     if (config.logo_path) {
-      // For remote (FTP) logos, use proxy path to avoid CORS/hotlink issues
-      config.logo_url = storage.isRemoteUrl(config.logo_path)
-        ? '/api/configuration/logo-image'
-        : storage.resolveLogoUrl(config.logo_path);
+      // Return the actual URL: FTP URL for remote, or local API path for local files
+      config.logo_url = storage.resolveLogoUrl(config.logo_path);
     }
     res.json({ success: true, configuration: config });
   });
@@ -226,11 +224,10 @@ router.post('/logo', logoUploadMiddleware, async (req, res) => {
               return res.status(500).json({ success: false, message: 'Failed to save logo' });
             }
             console.log('[Logo POST] DB updated, responding with success');
-            const logoUrl = storage.isRemoteUrl(storedPath) ? '/api/configuration/logo-image' : storage.resolveLogoUrl(storedPath);
             res.json({
               success: true,
               message: 'Logo uploaded successfully',
-              logo_url: logoUrl
+              logo_url: storage.resolveLogoUrl(storedPath)
             });
           }
         );
